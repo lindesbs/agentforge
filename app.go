@@ -14,9 +14,14 @@ import (
 type App struct {
  ctx context.Context
  inspector *inspector.Service
+ startupProject string
 }
 
 func (a *App) startup(ctx context.Context) { a.ctx = ctx }
+
+// StartupProject returns the optional validated CLI directory to the frontend.
+// Empty string means the user should choose a project in the UI.
+func (a *App) StartupProject() string {return a.startupProject}
 
 // SelectProjectDirectory opens the native OS directory chooser.
 // Cancellation returns an empty path without changing any project files.
