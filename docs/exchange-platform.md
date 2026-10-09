@@ -1,6 +1,6 @@
 # AgentForge Exchange — Architektur für das zukünftige Webportal
 
-**Ergänzende Dokumente:** [Website-Konzept agentforge.art](website-agentforge-art.md) · [Vergleich mit externem Namensvetter](external-agentforge-review.md). Die Domain ist geplant, aber nicht als registriert bestätigt.
+**Ergänzende Dokumente:** [Website-Konzept agentforge.art](website-agentforge-art.md). Die Domain ist geplant, aber nicht als registriert bestätigt.
 
 ## Produktaufteilung
 
