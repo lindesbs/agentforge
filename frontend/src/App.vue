@@ -3,20 +3,44 @@ import { ref } from 'vue'
 
 type ConfigFile = { path: string; provider: string; kind: string }
 type Project = { root: string; name: string; frameworks: string[]; files: ConfigFile[] }
-type InspectorBridge = { InspectProject: (path: string) => Promise<Project> }
+type InspectorBridge = {
+  InspectProject: (path: string) => Promise<Project>
+  SelectProjectDirectory: () => Promise<string>
+}
 declare global { interface Window { go?: { main?: { App?: InspectorBridge } } } }
+
 const path = ref('')
 const project = ref<Project | null>(null)
 const busy = ref(false)
 const error = ref('')
+
+function bridge(): InspectorBridge | undefined { return window.go?.main?.App }
+
+async function chooseDirectory() {
+  error.value = ''
+  const api = bridge()
+  if (!api) { error.value = 'Open this interface in the AgentForge desktop application.'; return }
+  busy.value = true
+  try {
+    const selected = await api.SelectProjectDirectory()
+    if (selected) { path.value = selected; await inspectSelected(api) }
+  } catch (e) { error.value = String(e) }
+  finally { busy.value = false }
+}
+
+async function inspectSelected(api: InspectorBridge) {
+  project.value = null
+  project.value = await api.InspectProject(path.value)
+}
+
 async function inspect() {
- error.value = ''
- project.value = null
- if (!window.go?.main?.App) { error.value = 'Open this interface in the AgentForge desktop application.'; return }
- busy.value = true
- try { project.value = await window.go.main.App.InspectProject(path.value) }
- catch (e) { error.value = String(e) }
- finally { busy.value = false }
+  error.value = ''
+  const api = bridge()
+  if (!api) { error.value = 'Open this interface in the AgentForge desktop application.'; return }
+  busy.value = true
+  try { await inspectSelected(api) }
+  catch (e) { error.value = String(e) }
+  finally { busy.value = false }
 }
 </script>
 
@@ -26,7 +50,14 @@ async function inspect() {
   <section class="hero">
    <h1>Project inspector</h1>
    <p>Inspect local Codex and Claude Code configuration files without running any agents.</p>
-   <form @submit.prevent="inspect"><label for="root">Project directory</label><div class="input-row"><input id="root" v-model="path" placeholder="/home/user/projects/my-app" required /><button :disabled="busy">{{ busy ? 'Inspecting…' : 'Inspect project' }}</button></div></form>
+   <form @submit.prevent="inspect">
+    <label for="root">Project directory</label>
+    <div class="input-row">
+     <input id="root" v-model="path" placeholder="/home/user/projects/my-app" required />
+     <button type="button" class="secondary" :disabled="busy" @click="chooseDirectory">Browse…</button>
+     <button type="submit" :disabled="busy">{{ busy ? 'Inspecting…' : 'Inspect project' }}</button>
+    </div>
+   </form>
    <p v-if="error" class="error" role="alert">{{ error }}</p>
   </section>
   <section v-if="project" class="results">
