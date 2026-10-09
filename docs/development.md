@@ -23,3 +23,9 @@ The initial inspector takes an explicit directory path, reads file names and bas
 - The inspector intentionally does not follow symlinks and does not recurse through arbitrary project files.
 - Codex/Claude provider paths are an initial subset, not a complete provider compatibility guarantee.
 - GitHub Actions now runs Go inspector tests, Vue typechecking/build, and a Linux desktop compile. Successful CI status must be verified on GitHub; macOS and Windows packaging are not yet covered.
+
+## Configuration editor (early MVP)
+
+Click a discovered configuration file to edit its **raw UTF-8 text**. AgentForge checks the file's SHA-256 digest before preview and before save, displays a line-oriented change preview, creates a recovery backup alongside the file, then replaces the original using a same-directory temporary file. Only known project-local configuration paths can be edited. It does **not yet parse structured agent properties** or validate provider-specific semantics.
+
+**Security limitations:** backups contain the original file contents and should be protected like the originals. This implementation does not yet prevent all concurrent write races or hard-link attacks. Do not use the editor on untrusted projects or security-sensitive configuration files until those issues are addressed. A future release will add structured validation and stronger filesystem safeguards.
