@@ -58,3 +58,11 @@ GitHub Actions runs frontend build/typecheck, Go unit tests, and a Linux desktop
 ## Configuration diagnostics
 
 The editor reports JSON syntax errors for Claude settings files and blocks saving invalid JSON. Markdown files receive non-blocking diagnostics for empty content and missing Claude agent frontmatter; TOML currently has informational diagnostics only, **not syntax validation**. These checks are not complete provider-schema validation. Recovery backups are created with owner-only permissions (0600), even if the original file is more widely readable. Known limitations of concurrent write races and hard links remain; avoid untrusted or security-critical directories.
+
+## Global template library (MVP)
+
+Global templates are local copies stored under the operating system's user configuration directory (typically `~/.config/agentforge/templates` on Linux). Each template contains a name, provider, kind, original relative path and the native file text. Template files have owner-only permissions (0600); the library folder has mode 0700 when created.
+
+In an opened project, choose a discovered file and save its **current on-disk contents** as a global template. To reuse a template, select a compatible provider/kind entry and preview it against an **existing** target file. Applying changes the editor draft, not the target file; the existing diff preview and explicit save step are still required.
+
+Limitations: the first library supports existing configuration targets only, not creation of new agent files. It does not yet support rename, deletion, tags, import/export, template search or project synchronization. Sensitive settings can be copied into templates: review source contents before saving a template. No agent execution occurs.
