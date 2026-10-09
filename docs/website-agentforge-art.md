@@ -147,4 +147,4 @@ Vor öffentlicher Nutzung:
 - Eigenes Architekturkonzept: `docs/exchange-platform.md`
 - Lernprotokoll: `docs/learning-protocol.md`
 - Austauschschema: `schemas/exchange-item-v1.schema.json`
-- Inspiration/Abgrenzung: https://github.com/AgentForge/AgentForge — separates externes Framework, kein Teil dieses Projekts.
+
