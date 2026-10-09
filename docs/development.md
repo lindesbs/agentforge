@@ -8,13 +8,13 @@ From the repository root:
 make install-system-deps  # Optional: installs Arch/CachyOS or Debian/Ubuntu system packages via sudo
 make setup                # Checks prerequisites, installs Go/npm dependencies and Wails CLI
 make test                 # Go tests and TypeScript checks
-make build                # Generates build/bin/agentforge
+make build                # Generates build/bin/agentforge (Wails production tag)
 ./build/bin/agentforge
 ```
 
 For iterative desktop development run `make dev`. `make doctor` only checks prerequisites, and `make help` lists targets.
 
-`make build` compiles for the **current Linux CPU architecture** (usually amd64 on x86-64); it does not cross-compile. The installed GTK/WebKit system packages remain runtime requirements. `make install-system-deps` is the only target that invokes sudo. The `setup-go` target runs `go mod tidy`, which can update `go.mod` and `go.sum`; commit the resulting lock/checksum changes as appropriate.
+`make build` compiles for the **current Linux CPU architecture** (usually amd64 on x86-64); it does not cross-compile. The installed GTK/WebKit system packages remain runtime requirements. The Wails production build requires both \`production\` and \`webkit2_41\` tags. A build with only \`webkit2_41\` may compile but exit at runtime with \`Wails applications will not build without the correct build tags.\` Rebuild using \`make build\` if you encounter this message. `make install-system-deps` is the only target that invokes sudo. The `setup-go` target runs `go mod tidy`, which can update `go.mod` and `go.sum`; commit the resulting lock/checksum changes as appropriate.
 
 
 ## Prerequisites
