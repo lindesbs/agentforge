@@ -15,7 +15,7 @@ jobs:
         with:
           go-version-file: go.mod
       - name: Run inspector tests
-        run: go test -race ./internal/inspector/...
+        run: go test -race ./internal/inspector/... ./internal/editor/...
 
   frontend:
     name: Vue typecheck and build
