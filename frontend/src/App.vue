@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 
 type ConfigFile = { path: string; provider: string; kind: string }
 type Project = { root: string; name: string; frameworks: string[]; files: ConfigFile[] }
@@ -54,6 +54,7 @@ const categoryOptions = ['PROJEKT_OK','PROJEKT_NOK','ALLGEMEIN_OK','ALLGEMEIN_NO
 const busy = ref(false)
 const error = ref('')
 const message = ref('')
+onMounted(() => { void refreshLearnings() })
 async function refreshLearnings() {
  try { learningEntries.value = await bridge().ListLearnings() }
  catch(e) { error.value=String(e) }
