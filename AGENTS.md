@@ -28,3 +28,17 @@ AgentForge is a **local configuration manager**, not an agent runtime. Never imp
 - Keep documentation aligned with behavior; avoid claiming unsupported features.
 - Run Go tests and frontend type checks when a buildable scaffold exists.
 - Prefer small, reviewable pull requests.
+
+## Verbindliches Entwicklungs-Lernprotokoll
+
+Für jede Entwicklungsaufgabe sind `docs/PROJEKT_OK.md`, `docs/PROJEKT_NOK.md`, `docs/ALLGEMEIN_OK.md` und `docs/ALLGEMEIN_NOK.md` zu berücksichtigen. Lies vor Änderungen die relevanten Einträge aller vier Dateien.
+
+- Dokumentiere nach Diagnose oder Review **bestätigte** Fehlerursachen mit Vermeidungsregel und Prüfung in der zutreffenden `*_NOK.md`.
+- Dokumentiere nach erfolgreicher Lösung bewährte Entscheidungen mit überprüfbarer Kontrolle in der zutreffenden `*_OK.md`.
+- Vor jedem Commit klären, ob neue Erkenntnisse gemeinsam mit dem Code dokumentiert werden müssen.
+- Der Geltungsbereich richtet sich nach der tatsächlichen Übertragbarkeit, nicht nach dem Entstehungsprojekt.
+- Vorhandene Einträge ergänzen statt Duplikate anzulegen; veraltete Regeln aktualisieren.
+- Nie Passwörter, Tokens, vollständige DSNs oder personenbezogene Daten dokumentieren.
+- Unbestätigte Vermutungen nicht als Regeln übernehmen.
+
+Siehe `docs/learning-protocol.md` für Kategorien, Format und Verwendung der sprachbezogenen Vorlagenbibliothek.

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 
 type ConfigFile = { path: string; provider: string; kind: string }
 type Project = { root: string; name: string; frameworks: string[]; files: ConfigFile[] }
@@ -7,6 +7,7 @@ type Document = { path: string; content: string; hash: string }
 type Preview = { path: string; diff: string; changed: boolean }
 type Issue = { severity: string; message: string }
 type TemplateSummary = { id: string; name: string; provider: string; kind: string; sourcePath: string; createdAt: string }
+type LearningEntry = { id: string; category: string; language: string; title: string; finding: string; rule: string; check: string; createdAt: string }
 type AgentFields = { path: string; hash: string; name: string; description: string }
 type Bridge = {
  InspectProject: (path: string) => Promise<Project>
@@ -20,6 +21,9 @@ type Bridge = {
  ListTemplates: () => Promise<TemplateSummary[]>
  SaveProjectAsTemplate: (root: string, path: string, name: string) => Promise<TemplateSummary>
  PrepareTemplateApply: (id: string, root: string, targetPath: string) => Promise<Document>
+ ListLearnings: () => Promise<LearningEntry[]>
+ SaveLearning: (entry: LearningEntry) => Promise<LearningEntry>
+ FormatLearning: (entry: LearningEntry) => Promise<string>
 }
 declare global { interface Window { go?: { main?: { App?: Bridge } } } }
 const path = ref('')
@@ -35,9 +39,45 @@ const templates = ref<TemplateSummary[]>([])
 const templateName = ref('')
 const selectedTemplate = ref('')
 const pendingTemplate = ref('')
+const learningEntries = ref<LearningEntry[]>([])
+const learningCategory = ref('ALLGEMEIN_OK')
+const learningLanguage = ref('Allgemein')
+const languageFilter = ref('Alle')
+const learningTitle = ref('')
+const learningFinding = ref('')
+const learningRule = ref('')
+const learningCheck = ref('')
+const learningMarkdown = ref('')
+const learningBusy = ref(false)
+const languageOptions = ['Allgemein','Go','PHP','TypeScript','JavaScript','Python','Rust','Kotlin','Java','C#','C++','Dart','SQL','Shell','Andere']
+const categoryOptions = ['PROJEKT_OK','PROJEKT_NOK','ALLGEMEIN_OK','ALLGEMEIN_NOK']
 const busy = ref(false)
 const error = ref('')
 const message = ref('')
+onMounted(() => { void refreshLearnings() })
+async function refreshLearnings() {
+ try { learningEntries.value = await bridge().ListLearnings() }
+ catch(e) { error.value=String(e) }
+}
+async function saveLearning() {
+ error.value='';message.value='';learningBusy.value=true
+ try {
+  const entry:LearningEntry = {id:'',createdAt:'',category:learningCategory.value,language:learningLanguage.value,
+   title:learningTitle.value,finding:learningFinding.value,rule:learningRule.value,check:learningCheck.value}
+  await bridge().SaveLearning(entry)
+  await refreshLearnings()
+  learningTitle.value='';learningFinding.value='';learningRule.value='';learningCheck.value=''
+  message.value='Bestätigte Erkenntnis in der lokalen Vorlagenbibliothek gespeichert; Projektdateien unverändert.'
+ } catch(e){error.value=String(e)}finally{learningBusy.value=false}
+}
+async function showLearning(entry:LearningEntry) {
+ error.value=''
+ try {learningMarkdown.value=await bridge().FormatLearning(entry)}
+ catch(e){error.value=String(e)}
+}
+function filteredLearnings():LearningEntry[] {
+ return learningEntries.value.filter(e=>languageFilter.value==='Alle'||e.language===languageFilter.value)
+}
 async function refreshTemplates() {
  try { templates.value=await bridge().ListTemplates() }
  catch(e) {error.value=String(e)}
@@ -81,6 +121,7 @@ async function inspectSelected(api: Bridge) {
  project.value = null
  project.value = await api.InspectProject(path.value)
  await refreshTemplates()
+ await refreshLearnings()
 }
 async function inspect() {
  error.value='';busy.value=true
@@ -155,6 +196,31 @@ function draftChanged(){preview.value=null;issues.value=[];pendingTemplate.value
    </form>
    <p v-if="error" class="error" role="alert">{{ error }}</p>
    <p v-if="message" class="success" role="status">{{ message }}</p>
+  </section>
+  <section class="learning-panel">
+   <h2>Entwicklungs-Erkenntnisse</h2>
+   <p>Bestätigte Lösungen und Fehlerursachen als wiederverwendbare Vorlagen je Programmiersprache dokumentieren. Die vier Projektdateien werden hierbei nicht automatisch verändert.</p>
+   <div class="learning-grid">
+    <div><label for="learning-category">Geltungsbereich / Bewertung</label>
+     <select id="learning-category" v-model="learningCategory"><option v-for="c in categoryOptions" :key="c">{{ c }}</option></select></div>
+    <div><label for="learning-language">Programmiersprache</label>
+     <select id="learning-language" v-model="learningLanguage"><option v-for="l in languageOptions" :key="l">{{ l }}</option></select></div>
+   </div>
+   <label for="learning-title">Titel der bestätigten Erkenntnis</label><input id="learning-title" v-model="learningTitle" maxlength="120" placeholder="Kurz und eindeutig" />
+   <label for="learning-finding">Bestätigte Erkenntnis / Ursache</label><textarea id="learning-finding" v-model="learningFinding" rows="3" />
+   <label for="learning-rule">Verbindliche Regel</label><textarea id="learning-rule" v-model="learningRule" rows="3" />
+   <label for="learning-check">Überprüfbare Kontrolle</label><textarea id="learning-check" v-model="learningCheck" rows="2" placeholder="Regressionstest, Lint, Healthcheck …" />
+   <div class="actions"><button :disabled="learningBusy || !learningTitle.trim() || !learningFinding.trim() || !learningRule.trim() || !learningCheck.trim()" @click="saveLearning">Erkenntnis als Vorlage speichern</button>
+    <button class="secondary" :disabled="learningBusy" @click="refreshLearnings">Vorlagen aktualisieren</button></div>
+   <div class="learning-grid"><h3>Gespeicherte Erkenntnisse ({{ filteredLearnings().length }})</h3>
+    <select v-model="languageFilter" aria-label="Sprache filtern"><option>Alle</option><option v-for="l in languageOptions" :key="l">{{ l }}</option></select></div>
+   <ul class="learning-list"><li v-for="item in filteredLearnings()" :key="item.id">
+    <button class="file-button" @click="showLearning(item)">{{ item.title }}</button>
+    <span class="muted">{{ item.language }} · {{ item.category }}</span>
+   </li></ul>
+   <div v-if="learningMarkdown" class="learning-output"><label for="learning-markdown">Markdown-Vorlage zum Übernehmen in die passende docs/*_OK/NOK.md</label>
+    <textarea id="learning-markdown" readonly :value="learningMarkdown" rows="9"></textarea>
+   </div>
   </section>
   <section v-if="project" class="results">
    <h2>{{ project.name }}</h2><p class="muted">{{ project.root }}</p>

@@ -66,3 +66,11 @@ Global templates are local copies stored under the operating system's user confi
 In an opened project, choose a discovered file and save its **current on-disk contents** as a global template. To reuse a template, select a compatible provider/kind entry and preview it against an **existing** target file. Applying changes the editor draft, not the target file; the existing diff preview and explicit save step are still required.
 
 Limitations: the first library supports existing configuration targets only, not creation of new agent files. It does not yet support rename, deletion, tags, import/export, template search or project synchronization. Sensitive settings can be copied into templates: review source contents before saving a template. No agent execution occurs.
+
+## Entwicklungs-Lernprotokoll und Sprachvorlagen
+
+Die vier verpflichtenden Dokumente `docs/PROJEKT_OK.md`, `docs/PROJEKT_NOK.md`, `docs/ALLGEMEIN_OK.md` und `docs/ALLGEMEIN_NOK.md` sowie der Ablauf sind in `docs/learning-protocol.md` beschrieben. Vor jeder Codeänderung relevante Einträge lesen; bestätigte Erkenntnisse vor dem Commit in der passenden Datei ergänzen.
+
+Die lokale Erkenntnisbibliothek im Desktop-UI ist von der bisherigen Konfigurationsvorlagenbibliothek getrennt. Neue Erkenntnisse lassen sich mit Kategorie, Sprache, Titel, nachgewiesener Ursache/Erkenntnis, verbindlicher Regel und überprüfbarer Kontrolle speichern. Eine Ansicht erzeugt Markdown zum gezielten Einfügen in die zuständige Dokumentationsdatei. Der Export ist **manuell**; es gibt keine automatische Veränderung von Projektdateien und keine Ausführung von Agenten.
+
+Der Benutzerkonfigurationsordner enthält die Einträge unter `agentforge/learning` als einzelne JSON-Dateien mit Dateimodus 0600. Sprachkategorien sind etwa Allgemein, Go, PHP, TypeScript, Python, Rust, Kotlin, Java, Shell und SQL. Projektspezifische Regeln werden nicht allein durch Auswahl einer Programmiersprache automatisch zu allgemeinen Regeln.

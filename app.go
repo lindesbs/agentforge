@@ -7,6 +7,7 @@ import (
  "github.com/lindesbs/agentforge/internal/inspector"
  "github.com/lindesbs/agentforge/internal/editor"
  "github.com/lindesbs/agentforge/internal/templates"
+ "github.com/lindesbs/agentforge/internal/learning"
  "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -64,4 +65,16 @@ func (a *App) SaveProjectAsTemplate(root,path,name string) (templates.Summary,er
 func (a *App) PrepareTemplateApply(id,root,targetPath string) (editor.Document,error) {
  library,err:=templates.New("");if err!=nil{return editor.Document{},err}
  return library.PrepareApply(id,root,targetPath)
+}
+
+func (a *App) ListLearnings() ([]learning.Entry,error) {
+ library,err:=learning.New("");if err!=nil{return nil,err}
+ return library.List()
+}
+func (a *App) SaveLearning(entry learning.Entry) (learning.Entry,error) {
+ library,err:=learning.New("");if err!=nil{return learning.Entry{},err}
+ return library.Save(entry)
+}
+func (a *App) FormatLearning(entry learning.Entry) string {
+ return learning.Markdown(entry)
 }
