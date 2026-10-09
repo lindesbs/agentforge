@@ -8,6 +8,7 @@ type Preview = { path: string; diff: string; changed: boolean }
 type Issue = { severity: string; message: string }
 type TemplateSummary = { id: string; name: string; provider: string; kind: string; sourcePath: string; createdAt: string }
 type LearningEntry = { id: string; category: string; language: string; title: string; finding: string; rule: string; check: string; createdAt: string }
+type LearningProjectPreview = { path: string; beforeHash: string; proposed: string; diff: string; changed: boolean }
 type AgentFields = { path: string; hash: string; name: string; description: string }
 type Bridge = {
  InspectProject: (path: string) => Promise<Project>
@@ -24,6 +25,8 @@ type Bridge = {
  ListLearnings: () => Promise<LearningEntry[]>
  SaveLearning: (entry: LearningEntry) => Promise<LearningEntry>
  FormatLearning: (entry: LearningEntry) => Promise<string>
+ PreviewLearningInProject: (root: string, id: string) => Promise<LearningProjectPreview>
+ ApplyLearningToProject: (root: string, id: string, expectedHash: string, expectedProposed: string) => Promise<LearningProjectPreview>
 }
 declare global { interface Window { go?: { main?: { App?: Bridge } } } }
 const path = ref('')
@@ -48,6 +51,9 @@ const learningFinding = ref('')
 const learningRule = ref('')
 const learningCheck = ref('')
 const learningMarkdown = ref('')
+const projectLearningPreview = ref<LearningProjectPreview | null>(null)
+const projectLearningID = ref('')
+const projectLearningRoot = ref('')
 const learningBusy = ref(false)
 const languageOptions = ['Allgemein','Go','PHP','TypeScript','JavaScript','Python','Rust','Kotlin','Java','C#','C++','Dart','SQL','Shell','Andere']
 const categoryOptions = ['PROJEKT_OK','PROJEKT_NOK','ALLGEMEIN_OK','ALLGEMEIN_NOK']
@@ -69,6 +75,25 @@ async function saveLearning() {
   learningTitle.value='';learningFinding.value='';learningRule.value='';learningCheck.value=''
   message.value='Bestätigte Erkenntnis in der lokalen Vorlagenbibliothek gespeichert; Projektdateien unverändert.'
  } catch(e){error.value=String(e)}finally{learningBusy.value=false}
+}
+async function previewLearningInProject(entry:LearningEntry) {
+ if(!project.value)return
+ error.value='';message.value='';projectLearningPreview.value=null;learningBusy.value=true
+ try {
+  const result=await bridge().PreviewLearningInProject(project.value.root,entry.id)
+  projectLearningPreview.value=result;projectLearningID.value=entry.id;projectLearningRoot.value=project.value.root
+ } catch(e){error.value=String(e)}finally{learningBusy.value=false}
+}
+async function applyLearningToProject() {
+ if(!project.value||!projectLearningPreview.value||!projectLearningID.value)return
+ error.value='';message.value='';learningBusy.value=true
+ try {
+  if(project.value.root!==projectLearningRoot.value)throw new Error('Projekt wurde gewechselt. Vorschau erneut erstellen.')
+  const plan=projectLearningPreview.value
+  await bridge().ApplyLearningToProject(project.value.root,projectLearningID.value,plan.beforeHash,plan.proposed)
+  projectLearningPreview.value=null;projectLearningID.value=''
+  message.value='Erkenntnis im Projektdokument ergänzt. Vorhandene Dokumente werden zuvor gesichert.'
+ }catch(e){error.value=String(e);projectLearningPreview.value=null}finally{learningBusy.value=false}
 }
 async function showLearning(entry:LearningEntry) {
  error.value=''
@@ -118,6 +143,8 @@ function bridge(): Bridge { const api=window.go?.main?.App; if(!api) throw new E
 function clearEditor() { document.value=null; draft.value=''; preview.value=null; agentFields.value=null; issues.value=[]; selectedTemplate.value=''; pendingTemplate.value=''; message.value='' }
 async function inspectSelected(api: Bridge) {
  clearEditor()
+ projectLearningPreview.value=null
+ projectLearningID.value=''
  project.value = null
  project.value = await api.InspectProject(path.value)
  await refreshTemplates()
@@ -217,7 +244,17 @@ function draftChanged(){preview.value=null;issues.value=[];pendingTemplate.value
    <ul class="learning-list"><li v-for="item in filteredLearnings()" :key="item.id">
     <button class="file-button" @click="showLearning(item)">{{ item.title }}</button>
     <span class="muted">{{ item.language }} · {{ item.category }}</span>
+    <button v-if="project" class="secondary learning-apply-button" :disabled="learningBusy" @click="previewLearningInProject(item)">In Projekt vorschlagen</button>
    </li></ul>
+   <section v-if="projectLearningPreview" class="learning-apply-preview">
+    <h3>Vorschau: {{ projectLearningPreview.path }}</h3>
+    <p>Diese Änderung wird erst nach ausdrücklicher Bestätigung in das ausgewählte Projekt geschrieben.</p>
+    <pre>{{ projectLearningPreview.diff }}</pre>
+    <div class="actions">
+     <button :disabled="learningBusy || !projectLearningPreview.changed" @click="applyLearningToProject">Geprüfte Erkenntnis übernehmen</button>
+     <button class="secondary" :disabled="learningBusy" @click="projectLearningPreview = null">Abbrechen</button>
+    </div>
+   </section>
    <div v-if="learningMarkdown" class="learning-output"><label for="learning-markdown">Markdown-Vorlage zum Übernehmen in die passende docs/*_OK/NOK.md</label>
     <textarea id="learning-markdown" readonly :value="learningMarkdown" rows="9"></textarea>
    </div>
