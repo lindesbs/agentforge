@@ -39,3 +39,10 @@ func (a *App) PreviewConfig(root,path,hash,content string) (editor.Preview,error
 func (a *App) SaveConfig(root,path,hash,content string) (editor.Document,error) {
  return editor.Save(root,path,hash,content)
 }
+
+func (a *App) ReadAgentFields(root,path string) (editor.AgentFields,error) {
+ return editor.ReadAgentFields(root,path)
+}
+func (a *App) PrepareAgentFields(root,path,hash,name,description string) (editor.Document,error) {
+ return editor.PrepareAgentFields(root,path,hash,name,description)
+}
