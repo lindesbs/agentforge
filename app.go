@@ -78,3 +78,14 @@ func (a *App) SaveLearning(entry learning.Entry) (learning.Entry,error) {
 func (a *App) FormatLearning(entry learning.Entry) string {
  return learning.Markdown(entry)
 }
+
+func (a *App) PreviewLearningInProject(root,id string) (learning.ProjectPreview,error) {
+ library,err:=learning.New("");if err!=nil{return learning.ProjectPreview{},err}
+ item,err:=library.Get(id);if err!=nil{return learning.ProjectPreview{},err}
+ return learning.PreviewProject(root,item)
+}
+func (a *App) ApplyLearningToProject(root,id,expectedHash,expectedProposed string) (learning.ProjectPreview,error) {
+ library,err:=learning.New("");if err!=nil{return learning.ProjectPreview{},err}
+ item,err:=library.Get(id);if err!=nil{return learning.ProjectPreview{},err}
+ return learning.ApplyProject(root,item,expectedHash,expectedProposed)
+}
