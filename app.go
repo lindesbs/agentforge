@@ -94,3 +94,12 @@ func (a *App) ApplyLearningToProject(root,id,expectedHash,expectedProposed strin
  item,err:=library.Get(id);if err!=nil{return learning.ProjectPreview{},err}
  return learning.ApplyProject(root,item,expectedHash,expectedProposed)
 }
+
+func (a *App) ScanProjectLearnings(root string) (learning.ImportScan,error) {
+ library,err:=learning.New("");if err!=nil{return learning.ImportScan{},err}
+ return library.ScanProject(root)
+}
+func (a *App) ImportProjectLearning(root,category string,index int,sourceHash,language string) (learning.Entry,error) {
+ library,err:=learning.New("");if err!=nil{return learning.Entry{},err}
+ return library.ImportProjectEntry(root,category,index,sourceHash,language)
+}
