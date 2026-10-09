@@ -46,3 +46,7 @@ func (a *App) ReadAgentFields(root,path string) (editor.AgentFields,error) {
 func (a *App) PrepareAgentFields(root,path,hash,name,description string) (editor.Document,error) {
  return editor.PrepareAgentFields(root,path,hash,name,description)
 }
+
+func (a *App) ValidateConfig(path, content string) []editor.Issue {
+ return editor.Validate(path, content)
+}
