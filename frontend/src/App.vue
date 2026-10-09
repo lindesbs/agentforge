@@ -5,6 +5,7 @@ type ConfigFile = { path: string; provider: string; kind: string }
 type Project = { root: string; name: string; frameworks: string[]; files: ConfigFile[] }
 type Document = { path: string; content: string; hash: string }
 type Preview = { path: string; diff: string; changed: boolean }
+type Issue = { severity: string; message: string }
 type AgentFields = { path: string; hash: string; name: string; description: string }
 type Bridge = {
  InspectProject: (path: string) => Promise<Project>
@@ -14,6 +15,7 @@ type Bridge = {
  SaveConfig: (root: string, path: string, hash: string, content: string) => Promise<Document>
  ReadAgentFields: (root: string, path: string) => Promise<AgentFields>
  PrepareAgentFields: (root: string, path: string, hash: string, name: string, description: string) => Promise<Document>
+ ValidateConfig: (path: string, content: string) => Promise<Issue[]>
 }
 declare global { interface Window { go?: { main?: { App?: Bridge } } } }
 const path = ref('')
@@ -22,13 +24,14 @@ const document = ref<Document | null>(null)
 const draft = ref('')
 const preview = ref<Preview | null>(null)
 const agentFields = ref<AgentFields | null>(null)
+const issues = ref<Issue[]>([])
 const agentName = ref('')
 const agentDescription = ref('')
 const busy = ref(false)
 const error = ref('')
 const message = ref('')
 function bridge(): Bridge { const api=window.go?.main?.App; if(!api) throw new Error('Open AgentForge as a desktop application.'); return api }
-function clearEditor() { document.value=null; draft.value=''; preview.value=null; agentFields.value=null; message.value='' }
+function clearEditor() { document.value=null; draft.value=''; preview.value=null; agentFields.value=null; issues.value=[]; message.value='' }
 async function inspectSelected(api: Bridge) {
  clearEditor()
  project.value = null
@@ -63,13 +66,17 @@ async function applyStructuredFields() {
  try {
   const prepared=await bridge().PrepareAgentFields(project.value.root,document.value.path,document.value.hash,agentName.value,agentDescription.value)
   draft.value=prepared.content
+  issues.value=await bridge().ValidateConfig(document.value.path,draft.value)
   preview.value=await bridge().PreviewConfig(project.value.root,document.value.path,document.value.hash,draft.value)
  } catch(e){error.value=String(e)} finally {busy.value=false}
 }
 async function previewChanges() {
  if(!project.value||!document.value)return
  error.value='';message.value='';preview.value=null;busy.value=true
- try {preview.value=await bridge().PreviewConfig(project.value.root,document.value.path,document.value.hash,draft.value)}
+ try {
+  issues.value=await bridge().ValidateConfig(document.value.path,draft.value)
+  preview.value=await bridge().PreviewConfig(project.value.root,document.value.path,document.value.hash,draft.value)
+ }
  catch(e){error.value=String(e)}finally{busy.value=false}
 }
 async function saveChanges() {
@@ -83,7 +90,7 @@ async function saveChanges() {
   preview.value=null;message.value='Saved. A recovery backup was created beside the original file.'
  } catch(e){error.value=String(e);preview.value=null}finally{busy.value=false}
 }
-function draftChanged(){preview.value=null;message.value=''}
+function draftChanged(){preview.value=null;issues.value=[];message.value=''}
 </script>
 
 <template>
@@ -121,9 +128,10 @@ function draftChanged(){preview.value=null;message.value=''}
     <p class="muted">Raw native configuration text · 1 MiB limit · Existing files only</p>
     <textarea v-model="draft" spellcheck="false" rows="16" @input="draftChanged"></textarea>
     <div class="actions"><button :disabled="busy || draft===document.content" @click="previewChanges">Preview changes</button><button class="secondary" :disabled="busy" @click="openFile({path:document.path,provider:'',kind:''})">Reload file</button></div>
+    <div v-if="issues.length" class="diagnostics" aria-live="polite"><h4>Configuration diagnostics</h4><ul><li v-for="(issue,index) in issues" :key="index" :class="issue.severity">{{ issue.severity.toUpperCase() }}: {{ issue.message }}</li></ul></div>
     <div v-if="preview" class="preview">
      <h3>Change preview</h3><p v-if="!preview.changed">No changes detected.</p>
-     <template v-else><pre>{{ preview.diff }}</pre><button :disabled="busy" @click="saveChanges">Save reviewed changes</button></template>
+     <template v-else><pre>{{ preview.diff }}</pre><button :disabled="busy || issues.some(i => i.severity === 'error')" @click="saveChanges">Save reviewed changes</button></template>
     </div>
    </div>
   </section>

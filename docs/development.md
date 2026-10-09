@@ -54,3 +54,7 @@ For existing `.claude/agents/*.md` files with simple single-line YAML frontmatte
 ## CI artifacts
 
 GitHub Actions runs frontend build/typecheck, Go unit tests, and a Linux desktop compilation. The desktop job executes `go mod tidy` before building and uploads `agentforge-linux-amd64` when compilation succeeds. Dependency lockfiles should be committed in a follow-up change for reproducibility.
+
+## Configuration diagnostics
+
+The editor reports JSON syntax errors for Claude settings files and blocks saving invalid JSON. Markdown files receive non-blocking diagnostics for empty content and missing Claude agent frontmatter; TOML currently has informational diagnostics only, **not syntax validation**. These checks are not complete provider-schema validation. Recovery backups are created with owner-only permissions (0600), even if the original file is more widely readable. Known limitations of concurrent write races and hard links remain; avoid untrusted or security-critical directories.

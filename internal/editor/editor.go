@@ -85,6 +85,7 @@ func PreviewChange(root,relative,expectedHash,newContent string)(Preview,error){
 func Save(root,relative,expectedHash,newContent string)(Document,error){
  preview,err:=PreviewChange(root,relative,expectedHash,newContent);if err!=nil{return Document{},err}
  if !preview.Changed{return read(root,relative)}
+ if err:=validateForSave(relative,newContent);err!=nil{return Document{},err}
  path,err:=resolve(root,relative);if err!=nil{return Document{},err}
  original,err:=os.ReadFile(path);if err!=nil{return Document{},err}
  if hash(string(original))!=expectedHash{return Document{},errors.New("file changed on disk; reload")}
@@ -93,7 +94,7 @@ func Save(root,relative,expectedHash,newContent string)(Document,error){
  backup,err:=os.CreateTemp(dir,".agentforge-backup-*");if err!=nil{return Document{},err}
  backupPath:=backup.Name()
  if _,err=backup.Write(original);err!=nil{backup.Close();os.Remove(backupPath);return Document{},err}
- if err=backup.Chmod(info.Mode().Perm());err!=nil{backup.Close();os.Remove(backupPath);return Document{},err}
+ if err=backup.Chmod(0600);err!=nil{backup.Close();os.Remove(backupPath);return Document{},err}
  if err=backup.Sync();err!=nil{backup.Close();os.Remove(backupPath);return Document{},err}
  if err=backup.Close();err!=nil{os.Remove(backupPath);return Document{},err}
  tmp,err:=os.CreateTemp(dir,".agentforge-write-*");if err!=nil{return Document{},err}
