@@ -8,9 +8,14 @@ type Preview = { path: string; diff: string; changed: boolean }
 type Issue = { severity: string; message: string }
 type TemplateSummary = { id: string; name: string; provider: string; kind: string; sourcePath: string; createdAt: string }
 type LearningEntry = { id: string; category: string; language: string; title: string; finding: string; rule: string; check: string; createdAt: string }
+type LearningProjectPreview = { path: string; beforeHash: string; proposed: string; diff: string; changed: boolean }
+type LearningImportCandidate = {category:string; index:number; sourcePath:string; sourceHash:string; entry:LearningEntry; duplicate:boolean}
+type LearningImportSkipped = {sourcePath:string; heading:string; reason:string}
+type LearningImportScan = {candidates:LearningImportCandidate[]; skipped:LearningImportSkipped[]}
 type AgentFields = { path: string; hash: string; name: string; description: string }
 type Bridge = {
  InspectProject: (path: string) => Promise<Project>
+ StartupProject: () => Promise<string>
  SelectProjectDirectory: () => Promise<string>
  ReadConfig: (root: string, path: string) => Promise<Document>
  PreviewConfig: (root: string, path: string, hash: string, content: string) => Promise<Preview>
@@ -24,6 +29,10 @@ type Bridge = {
  ListLearnings: () => Promise<LearningEntry[]>
  SaveLearning: (entry: LearningEntry) => Promise<LearningEntry>
  FormatLearning: (entry: LearningEntry) => Promise<string>
+ PreviewLearningInProject: (root: string, id: string) => Promise<LearningProjectPreview>
+ ApplyLearningToProject: (root: string, id: string, expectedHash: string, expectedProposed: string) => Promise<LearningProjectPreview>
+ ScanProjectLearnings: (root: string) => Promise<LearningImportScan>
+ ImportProjectLearning: (root: string, category: string, index: number, sourceHash: string, language: string) => Promise<LearningEntry>
 }
 declare global { interface Window { go?: { main?: { App?: Bridge } } } }
 const path = ref('')
@@ -48,13 +57,28 @@ const learningFinding = ref('')
 const learningRule = ref('')
 const learningCheck = ref('')
 const learningMarkdown = ref('')
+const projectLearningPreview = ref<LearningProjectPreview | null>(null)
+const projectLearningID = ref('')
+const projectLearningRoot = ref('')
+const learningImportScan = ref<LearningImportScan | null>(null)
+const learningImportBusy = ref(false)
+const learningImportLanguages = ref<Record<string,string>>({})
 const learningBusy = ref(false)
 const languageOptions = ['Allgemein','Go','PHP','TypeScript','JavaScript','Python','Rust','Kotlin','Java','C#','C++','Dart','SQL','Shell','Andere']
 const categoryOptions = ['PROJEKT_OK','PROJEKT_NOK','ALLGEMEIN_OK','ALLGEMEIN_NOK']
 const busy = ref(false)
 const error = ref('')
 const message = ref('')
-onMounted(() => { void refreshLearnings() })
+onMounted(async () => {
+ void refreshLearnings()
+ try {
+  const selected = await bridge().StartupProject()
+  if(selected) {
+   path.value=selected
+   await inspect()
+  }
+ } catch(e) { error.value=String(e) }
+})
 async function refreshLearnings() {
  try { learningEntries.value = await bridge().ListLearnings() }
  catch(e) { error.value=String(e) }
@@ -69,6 +93,50 @@ async function saveLearning() {
   learningTitle.value='';learningFinding.value='';learningRule.value='';learningCheck.value=''
   message.value='Bestätigte Erkenntnis in der lokalen Vorlagenbibliothek gespeichert; Projektdateien unverändert.'
  } catch(e){error.value=String(e)}finally{learningBusy.value=false}
+}
+function importKey(candidate:LearningImportCandidate):string {
+ return candidate.category+':'+candidate.index
+}
+async function scanExistingLearnings() {
+ if(!project.value)return
+ error.value='';message.value='';learningImportBusy.value=true
+ try {
+  learningImportScan.value=await bridge().ScanProjectLearnings(project.value.root)
+  learningImportLanguages.value={}
+  for(const c of learningImportScan.value.candidates) {
+   learningImportLanguages.value[importKey(c)]=c.entry.language
+  }
+ }catch(e){error.value=String(e);learningImportScan.value=null}finally{learningImportBusy.value=false}
+}
+async function importExistingLearning(candidate:LearningImportCandidate) {
+ if(!project.value)return
+ error.value='';message.value='';learningImportBusy.value=true
+ try {
+  const chosen=learningImportLanguages.value[importKey(candidate)]||candidate.entry.language
+  await bridge().ImportProjectLearning(project.value.root,candidate.category,candidate.index,candidate.sourceHash,chosen)
+  await refreshLearnings()
+  await scanExistingLearnings()
+  message.value='Erkenntnis in die lokale Bibliothek importiert. Projektdateien blieben unverändert.'
+ }catch(e){error.value=String(e)}finally{learningImportBusy.value=false}
+}
+async function previewLearningInProject(entry:LearningEntry) {
+ if(!project.value)return
+ error.value='';message.value='';projectLearningPreview.value=null;learningBusy.value=true
+ try {
+  const result=await bridge().PreviewLearningInProject(project.value.root,entry.id)
+  projectLearningPreview.value=result;projectLearningID.value=entry.id;projectLearningRoot.value=project.value.root
+ } catch(e){error.value=String(e)}finally{learningBusy.value=false}
+}
+async function applyLearningToProject() {
+ if(!project.value||!projectLearningPreview.value||!projectLearningID.value)return
+ error.value='';message.value='';learningBusy.value=true
+ try {
+  if(project.value.root!==projectLearningRoot.value)throw new Error('Projekt wurde gewechselt. Vorschau erneut erstellen.')
+  const plan=projectLearningPreview.value
+  await bridge().ApplyLearningToProject(project.value.root,projectLearningID.value,plan.beforeHash,plan.proposed)
+  projectLearningPreview.value=null;projectLearningID.value=''
+  message.value='Erkenntnis im Projektdokument ergänzt. Vorhandene Dokumente werden zuvor gesichert.'
+ }catch(e){error.value=String(e);projectLearningPreview.value=null}finally{learningBusy.value=false}
 }
 async function showLearning(entry:LearningEntry) {
  error.value=''
@@ -118,6 +186,9 @@ function bridge(): Bridge { const api=window.go?.main?.App; if(!api) throw new E
 function clearEditor() { document.value=null; draft.value=''; preview.value=null; agentFields.value=null; issues.value=[]; selectedTemplate.value=''; pendingTemplate.value=''; message.value='' }
 async function inspectSelected(api: Bridge) {
  clearEditor()
+ projectLearningPreview.value=null
+ projectLearningID.value=''
+ learningImportScan.value=null
  project.value = null
  project.value = await api.InspectProject(path.value)
  await refreshTemplates()
@@ -212,12 +283,50 @@ function draftChanged(){preview.value=null;issues.value=[];pendingTemplate.value
    <label for="learning-check">Überprüfbare Kontrolle</label><textarea id="learning-check" v-model="learningCheck" rows="2" placeholder="Regressionstest, Lint, Healthcheck …" />
    <div class="actions"><button :disabled="learningBusy || !learningTitle.trim() || !learningFinding.trim() || !learningRule.trim() || !learningCheck.trim()" @click="saveLearning">Erkenntnis als Vorlage speichern</button>
     <button class="secondary" :disabled="learningBusy" @click="refreshLearnings">Vorlagen aktualisieren</button></div>
+   <section v-if="project" class="learning-import">
+    <h3>Vorhandene Erkenntnisse aus dem Projekt importieren</h3>
+    <p>Die vier `docs/PROJEKT_*.md`- und `docs/ALLGEMEIN_*.md`-Dateien werden nur gelesen. Einträge mit bestätigter Erkenntnis, Regel und Prüfung werden als Vorschau angeboten.</p>
+    <button class="secondary" :disabled="learningImportBusy" @click="scanExistingLearnings">Projektdokumente durchsuchen</button>
+    <template v-if="learningImportScan">
+     <p>{{ learningImportScan.candidates.length }} importierbare Einträge · {{ learningImportScan.skipped.length }} unvollständige Abschnitte</p>
+     <ul class="learning-import-list">
+      <li v-for="candidate in learningImportScan.candidates" :key="importKey(candidate)">
+       <div><strong>{{ candidate.entry.title }}</strong> <span class="muted">{{ candidate.sourcePath }}</span></div>
+       <p><strong>Erkenntnis:</strong> {{ candidate.entry.finding }}</p>
+       <p><strong>Regel:</strong> {{ candidate.entry.rule }}</p>
+       <p><strong>Prüfung:</strong> {{ candidate.entry.check }}</p>
+       <div class="actions">
+        <select v-model="learningImportLanguages[importKey(candidate)]" :aria-label="'Sprache für '+candidate.entry.title">
+         <option v-for="lang in languageOptions" :key="lang">{{ lang }}</option>
+        </select>
+        <button :disabled="learningImportBusy || candidate.duplicate && learningImportLanguages[importKey(candidate)] === candidate.entry.language" @click="importExistingLearning(candidate)">
+         {{ candidate.duplicate && learningImportLanguages[importKey(candidate)] === candidate.entry.language ? 'Bereits vorhanden' : 'In Bibliothek übernehmen' }}
+        </button>
+       </div>
+      </li>
+     </ul>
+     <details v-if="learningImportScan.skipped.length">
+      <summary>Nicht importierte Abschnitte anzeigen</summary>
+      <ul><li v-for="(item,i) in learningImportScan.skipped" :key="i">{{ item.sourcePath }} – {{ item.heading }}: {{ item.reason }}</li></ul>
+     </details>
+    </template>
+   </section>
    <div class="learning-grid"><h3>Gespeicherte Erkenntnisse ({{ filteredLearnings().length }})</h3>
     <select v-model="languageFilter" aria-label="Sprache filtern"><option>Alle</option><option v-for="l in languageOptions" :key="l">{{ l }}</option></select></div>
    <ul class="learning-list"><li v-for="item in filteredLearnings()" :key="item.id">
     <button class="file-button" @click="showLearning(item)">{{ item.title }}</button>
     <span class="muted">{{ item.language }} · {{ item.category }}</span>
+    <button v-if="project" class="secondary learning-apply-button" :disabled="learningBusy" @click="previewLearningInProject(item)">In Projekt vorschlagen</button>
    </li></ul>
+   <section v-if="projectLearningPreview" class="learning-apply-preview">
+    <h3>Vorschau: {{ projectLearningPreview.path }}</h3>
+    <p>Diese Änderung wird erst nach ausdrücklicher Bestätigung in das ausgewählte Projekt geschrieben.</p>
+    <pre>{{ projectLearningPreview.diff }}</pre>
+    <div class="actions">
+     <button :disabled="learningBusy || !projectLearningPreview.changed" @click="applyLearningToProject">Geprüfte Erkenntnis übernehmen</button>
+     <button class="secondary" :disabled="learningBusy" @click="projectLearningPreview = null">Abbrechen</button>
+    </div>
+   </section>
    <div v-if="learningMarkdown" class="learning-output"><label for="learning-markdown">Markdown-Vorlage zum Übernehmen in die passende docs/*_OK/NOK.md</label>
     <textarea id="learning-markdown" readonly :value="learningMarkdown" rows="9"></textarea>
    </div>

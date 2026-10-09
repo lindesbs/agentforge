@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/agentforge/schemas/exchange-item-v1.schema.json",
+  "title": "AgentForge Exchange item v1 (proposed)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "title", "language", "license", "visibility", "content", "revision"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "kind": { "enum": ["agent-template", "learning"] },
+    "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "description": { "type": "string", "maxLength": 4000 },
+    "language": { "type": "string", "minLength": 1, "maxLength": 40 },
+    "frameworks": { "type": "array", "uniqueItems": true, "maxItems": 20, "items": { "type": "string", "maxLength": 64 } },
+    "tags": { "type": "array", "uniqueItems": true, "maxItems": 20, "items": { "type": "string", "maxLength": 40 } },
+    "provider": { "enum": ["codex", "claude", "agnostic"] },
+    "scope": { "enum": ["PROJEKT_OK", "PROJEKT_NOK", "ALLGEMEIN_OK", "ALLGEMEIN_NOK"] },
+    "license": { "type": "string", "minLength": 1, "maxLength": 100 },
+    "visibility": { "enum": ["private", "unlisted", "public"] },
+    "revision": { "type": "integer", "minimum": 1 },
+    "content": { "type": "string", "minLength": 1, "maxLength": 1048576 },
+    "checks": { "type": "string", "maxLength": 8192 },
+    "evidence": { "type": "array", "maxItems": 20, "items": { "type": "string", "maxLength": 1000 } }
+  },
+  "allOf": [
+    { "if": { "properties": { "kind": { "const": "learning" } } },
+      "then": { "required": ["scope", "checks"] } },
+    { "if": { "properties": { "kind": { "const": "agent-template" } } },
+      "then": { "required": ["provider"] } }
+  ]
+}

@@ -14,9 +14,14 @@ import (
 type App struct {
  ctx context.Context
  inspector *inspector.Service
+ startupProject string
 }
 
 func (a *App) startup(ctx context.Context) { a.ctx = ctx }
+
+// StartupProject returns the optional validated CLI directory to the frontend.
+// Empty string means the user should choose a project in the UI.
+func (a *App) StartupProject() string {return a.startupProject}
 
 // SelectProjectDirectory opens the native OS directory chooser.
 // Cancellation returns an empty path without changing any project files.
@@ -77,4 +82,24 @@ func (a *App) SaveLearning(entry learning.Entry) (learning.Entry,error) {
 }
 func (a *App) FormatLearning(entry learning.Entry) string {
  return learning.Markdown(entry)
+}
+
+func (a *App) PreviewLearningInProject(root,id string) (learning.ProjectPreview,error) {
+ library,err:=learning.New("");if err!=nil{return learning.ProjectPreview{},err}
+ item,err:=library.Get(id);if err!=nil{return learning.ProjectPreview{},err}
+ return learning.PreviewProject(root,item)
+}
+func (a *App) ApplyLearningToProject(root,id,expectedHash,expectedProposed string) (learning.ProjectPreview,error) {
+ library,err:=learning.New("");if err!=nil{return learning.ProjectPreview{},err}
+ item,err:=library.Get(id);if err!=nil{return learning.ProjectPreview{},err}
+ return learning.ApplyProject(root,item,expectedHash,expectedProposed)
+}
+
+func (a *App) ScanProjectLearnings(root string) (learning.ImportScan,error) {
+ library,err:=learning.New("");if err!=nil{return learning.ImportScan{},err}
+ return library.ScanProject(root)
+}
+func (a *App) ImportProjectLearning(root,category string,index int,sourceHash,language string) (learning.Entry,error) {
+ library,err:=learning.New("");if err!=nil{return learning.Entry{},err}
+ return library.ImportProjectEntry(root,category,index,sourceHash,language)
 }
