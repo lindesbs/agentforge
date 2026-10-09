@@ -1,5 +1,7 @@
 # AgentForge Exchange — Architektur für das zukünftige Webportal
 
+**Ergänzende Dokumente:** [Website-Konzept agentforge.art](website-agentforge-art.md) · [Vergleich mit externem Namensvetter](external-agentforge-review.md). Die Domain ist geplant, aber nicht als registriert bestätigt.
+
 ## Produktaufteilung
 
 **AgentForge Desktop** bleibt eine lokal laufende Wails-Anwendung. Eine Domain stellt kein Desktopprogramm im Browser bereit. Die Domain wird später das Webportal **AgentForge Exchange** hosten: öffentlicher Katalog, Dokumentation, Community, Downloadbereich und eine optionale Publishing-API. Offline-Nutzung der Desktop-App bleibt möglich.
