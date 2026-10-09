@@ -21,5 +21,6 @@ func main() {
   Height: 750,
   AssetServer: &assetserver.Options{Assets: assets},
   Bind: []interface{}{app},
+  OnStartup: app.startup,
  }); err != nil { log.Fatal(err) }
 }
