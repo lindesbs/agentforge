@@ -5,12 +5,15 @@ type ConfigFile = { path: string; provider: string; kind: string }
 type Project = { root: string; name: string; frameworks: string[]; files: ConfigFile[] }
 type Document = { path: string; content: string; hash: string }
 type Preview = { path: string; diff: string; changed: boolean }
+type AgentFields = { path: string; hash: string; name: string; description: string }
 type Bridge = {
  InspectProject: (path: string) => Promise<Project>
  SelectProjectDirectory: () => Promise<string>
  ReadConfig: (root: string, path: string) => Promise<Document>
  PreviewConfig: (root: string, path: string, hash: string, content: string) => Promise<Preview>
  SaveConfig: (root: string, path: string, hash: string, content: string) => Promise<Document>
+ ReadAgentFields: (root: string, path: string) => Promise<AgentFields>
+ PrepareAgentFields: (root: string, path: string, hash: string, name: string, description: string) => Promise<Document>
 }
 declare global { interface Window { go?: { main?: { App?: Bridge } } } }
 const path = ref('')
@@ -18,11 +21,14 @@ const project = ref<Project | null>(null)
 const document = ref<Document | null>(null)
 const draft = ref('')
 const preview = ref<Preview | null>(null)
+const agentFields = ref<AgentFields | null>(null)
+const agentName = ref('')
+const agentDescription = ref('')
 const busy = ref(false)
 const error = ref('')
 const message = ref('')
 function bridge(): Bridge { const api=window.go?.main?.App; if(!api) throw new Error('Open AgentForge as a desktop application.'); return api }
-function clearEditor() { document.value=null; draft.value=''; preview.value=null; message.value='' }
+function clearEditor() { document.value=null; draft.value=''; preview.value=null; agentFields.value=null; message.value='' }
 async function inspectSelected(api: Bridge) {
  clearEditor()
  project.value = null
@@ -42,8 +48,23 @@ async function chooseDirectory() {
 async function openFile(file: ConfigFile) {
  if(!project.value)return
  error.value='';clearEditor();busy.value=true
- try {const doc=await bridge().ReadConfig(project.value.root,file.path);document.value=doc;draft.value=doc.content}
+ try {
+  const api=bridge();const doc=await api.ReadConfig(project.value.root,file.path);document.value=doc;draft.value=doc.content
+  if(file.provider==='claude'&&file.kind==='agent') {
+   try {const fields=await api.ReadAgentFields(project.value.root,file.path);agentFields.value=fields;agentName.value=fields.name;agentDescription.value=fields.description}
+   catch { agentFields.value=null }
+  }
+ }
  catch(e){error.value=String(e)}finally{busy.value=false}
+}
+async function applyStructuredFields() {
+ if(!project.value||!document.value||!agentFields.value)return
+ error.value='';message.value='';preview.value=null;busy.value=true
+ try {
+  const prepared=await bridge().PrepareAgentFields(project.value.root,document.value.path,document.value.hash,agentName.value,agentDescription.value)
+  draft.value=prepared.content
+  preview.value=await bridge().PreviewConfig(project.value.root,document.value.path,document.value.hash,draft.value)
+ } catch(e){error.value=String(e)} finally {busy.value=false}
 }
 async function previewChanges() {
  if(!project.value||!document.value)return
@@ -90,6 +111,13 @@ function draftChanged(){preview.value=null;message.value=''}
    <ul><li v-for="file in project.files" :key="file.path"><button class="file-button" :disabled="busy" @click="openFile(file)">{{ file.path }}</button><span class="muted">{{ file.provider }} · {{ file.kind }}</span></li></ul>
    <div v-if="document" class="editor">
     <h3>Edit: {{ document.path }}</h3>
+    <div v-if="agentFields" class="structured-fields">
+     <h4>Claude agent properties</h4>
+     <label for="agent-name">Name</label><input id="agent-name" v-model="agentName" />
+     <label for="agent-description">Description</label><input id="agent-description" v-model="agentDescription" />
+     <button :disabled="busy" @click="applyStructuredFields">Apply fields and preview</button>
+     <p class="muted">Only existing simple YAML name/description fields are supported. Other content is preserved.</p>
+    </div>
     <p class="muted">Raw native configuration text · 1 MiB limit · Existing files only</p>
     <textarea v-model="draft" spellcheck="false" rows="16" @input="draftChanged"></textarea>
     <div class="actions"><button :disabled="busy || draft===document.content" @click="previewChanges">Preview changes</button><button class="secondary" :disabled="busy" @click="openFile({path:document.path,provider:'',kind:''})">Reload file</button></div>
