@@ -60,7 +60,7 @@ test: test-go test-frontend ## Run backend and frontend checks
 build-linux: doctor setup-go setup-frontend ## Compile Linux AMD64/native architecture binary
 	cd frontend && $(NPM) run build
 	mkdir -p $(BIN_DIR)
-	$(GO) build -tags webkit2_41 -trimpath -o $(BIN_DIR)/$(APP) .
+	CGO_ENABLED=1 $(GO) build -tags 'production,webkit2_41' -trimpath -o $(BIN_DIR)/$(APP) .
 	@echo "Built: $(BIN_DIR)/$(APP)"
 
 build: build-linux ## Alias for Linux build
