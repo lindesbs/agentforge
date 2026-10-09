@@ -72,6 +72,10 @@ func (l *Library) load(id string)(Entry,error){
  if err=validate(e);err!=nil{return Entry{},err}
  return e,nil
 }
+func (l *Library) Get(id string)(Entry,error){
+ if err:=l.ensure();err!=nil{return Entry{},err}
+ return l.load(id)
+}
 func (l *Library) List()([]Entry,error){
  if err:=l.ensure();err!=nil{return nil,err}
  entries,err:=os.ReadDir(l.root);if err!=nil{return nil,err}
