@@ -7,3 +7,5 @@ button.secondary{background:#263248;color:#e5e7eb;border:1px solid #4a5870}butto
 .structured-fields{display:grid;gap:10px;margin:20px 0;padding:20px;background:#111b2a;border:1px solid #344155;border-radius:10px}.structured-fields h4{margin:0 0 8px}.structured-fields button{justify-self:start;margin-top:6px}
 
 .diagnostics{margin-top:18px;border:1px solid #475569;border-radius:8px;padding:14px}.diagnostics h4{margin:0}.diagnostics ul{margin:8px 0}.diagnostics li{display:block;padding:8px 0}.diagnostics .error{color:#ff9b9b}.diagnostics .warning{color:#fcd34d}.diagnostics .info{color:#a5b4fc}
+
+.template-library{padding:20px;margin:22px 0;border:1px solid #42536e;border-radius:10px;background:#111b2a}.template-library h4{margin:0 0 6px}.template-library .input-row{margin:12px 0;align-items:stretch}.template-library select{flex:1;min-width:0;background:#1c2534;color:#fff;border:1px solid #4a5870;border-radius:8px;padding:12px;font-size:14px}@media(max-width:650px){.template-library .input-row{flex-direction:column}}
