@@ -87,3 +87,7 @@ Die vier verpflichtenden Dokumente `docs/PROJEKT_OK.md`, `docs/PROJEKT_NOK.md`, 
 Die lokale Erkenntnisbibliothek im Desktop-UI ist von der bisherigen Konfigurationsvorlagenbibliothek getrennt. Neue Erkenntnisse lassen sich mit Kategorie, Sprache, Titel, nachgewiesener Ursache/Erkenntnis, verbindlicher Regel und überprüfbarer Kontrolle speichern. Eine Ansicht erzeugt Markdown zum gezielten Einfügen in die zuständige Dokumentationsdatei. Der Export ist **manuell**; es gibt keine automatische Veränderung von Projektdateien und keine Ausführung von Agenten.
 
 Der Benutzerkonfigurationsordner enthält die Einträge unter `agentforge/learning` als einzelne JSON-Dateien mit Dateimodus 0600. Sprachkategorien sind etwa Allgemein, Go, PHP, TypeScript, Python, Rust, Kotlin, Java, Shell und SQL. Projektspezifische Regeln werden nicht allein durch Auswahl einer Programmiersprache automatisch zu allgemeinen Regeln.
+
+## Bestehende Erkenntnisse importieren
+
+In „Entwicklungs-Erkenntnisse“ nach Auswahl eines Projekts auf **„Projektdokumente durchsuchen“** klicken. Importiert werden nur ausdrücklich bestätigte und einzeln ausgewählte Einträge der vier Markdown-Protokolle, deren Überschriften und Pflichtfelder erkannt werden. Ungültige oder unvollständige Einträge bleiben unverändert und werden als übersprungene Abschnitte angezeigt. Backend und UI übernehmen nichts automatisch; ursprüngliche Dokumente werden nie geändert. Weitere Einzelheiten: `docs/learning-protocol.md`.
