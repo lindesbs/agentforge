@@ -2,6 +2,7 @@ package main
 
 import (
  "embed"
+ "io/fs"
  "log"
 
  "github.com/lindesbs/agentforge/internal/inspector"
@@ -11,9 +12,11 @@ import (
 )
 
 //go:embed all:frontend/dist
-var assets embed.FS
+var embeddedAssets embed.FS
 
 func main() {
+ assets, err := fs.Sub(embeddedAssets, "frontend/dist")
+ if err != nil { log.Fatal(err) }
  app := &App{inspector: inspector.New()}
  if err := wails.Run(&options.App{
   Title: "AgentForge",
