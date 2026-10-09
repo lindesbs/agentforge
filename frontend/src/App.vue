@@ -12,6 +12,7 @@ type LearningProjectPreview = { path: string; beforeHash: string; proposed: stri
 type AgentFields = { path: string; hash: string; name: string; description: string }
 type Bridge = {
  InspectProject: (path: string) => Promise<Project>
+ StartupProject: () => Promise<string>
  SelectProjectDirectory: () => Promise<string>
  ReadConfig: (root: string, path: string) => Promise<Document>
  PreviewConfig: (root: string, path: string, hash: string, content: string) => Promise<Preview>
@@ -60,7 +61,16 @@ const categoryOptions = ['PROJEKT_OK','PROJEKT_NOK','ALLGEMEIN_OK','ALLGEMEIN_NO
 const busy = ref(false)
 const error = ref('')
 const message = ref('')
-onMounted(() => { void refreshLearnings() })
+onMounted(async () => {
+ void refreshLearnings()
+ try {
+  const selected = await bridge().StartupProject()
+  if(selected) {
+   path.value=selected
+   await inspect()
+  }
+ } catch(e) { error.value=String(e) }
+})
 async function refreshLearnings() {
  try { learningEntries.value = await bridge().ListLearnings() }
  catch(e) { error.value=String(e) }
