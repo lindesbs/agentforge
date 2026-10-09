@@ -52,7 +52,13 @@ jobs:
       - name: Resolve Go modules
         run: go mod tidy
       - name: Compile desktop app
-        run: go build -tags webkit2_41 -o dist/agentforge .
+        run: mkdir -p dist && CGO_ENABLED=1 go build -tags 'production,webkit2_41' -trimpath -o dist/agentforge .
+      - name: Check executable does not contain Wails build-tag stub
+        run: |
+          if strings dist/agentforge | grep -Fq 'Wails applications will not build without the correct build tags'; then
+            echo 'Desktop binary contains Wails build-tag stub' >&2
+            exit 1
+          fi
       - name: Upload Linux executable
         uses: actions/upload-artifact@v4
         with:
