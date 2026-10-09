@@ -34,15 +34,12 @@ install-system-deps: ## Install Linux dependencies (explicit sudo, Arch/CachyOS 
 	  echo "Unsupported package manager. Install Go, Node/npm, GTK3 and WebKit2GTK 4.1 manually."; exit 1; \
 	fi
 
-setup-go: ## Download Go modules and generate go.sum
-	$(GO) mod tidy
+setup-go: ## Download and verify the locked Go modules
+	$(GO) mod download
+	$(GO) mod verify
 
 setup-frontend: ## Install frontend dependencies
-	@if [ -f frontend/package-lock.json ]; then \
-	  cd frontend && $(NPM) ci; \
-	else \
-	  cd frontend && $(NPM) install; \
-	fi
+	cd frontend && $(NPM) ci
 
 setup-wails: ## Install Wails v2 CLI in GOPATH/bin
 	$(GO) install github.com/wailsapp/wails/v2/cmd/wails@v2.10.2
@@ -50,7 +47,7 @@ setup-wails: ## Install Wails v2 CLI in GOPATH/bin
 setup: doctor setup-go setup-frontend setup-wails ## Set up all application dependencies
 
 test-go: ## Run Go unit tests (no desktop runtime required)
-	$(GO) test ./internal/...
+	$(GO) test -mod=readonly ./internal/...
 
 test-frontend: ## Run Vue/TypeScript checks
 	cd frontend && $(NPM) run typecheck
@@ -60,7 +57,7 @@ test: test-go test-frontend ## Run backend and frontend checks
 build-linux: doctor setup-go setup-frontend ## Compile Linux AMD64/native architecture binary
 	cd frontend && $(NPM) run build
 	mkdir -p $(BIN_DIR)
-	CGO_ENABLED=1 $(GO) build -tags 'production,webkit2_41' -trimpath -o $(BIN_DIR)/$(APP) .
+	CGO_ENABLED=1 $(GO) build -mod=readonly -tags 'production,webkit2_41' -trimpath -o $(BIN_DIR)/$(APP) .
 	@echo "Built: $(BIN_DIR)/$(APP)"
 
 build: build-linux ## Alias for Linux build
