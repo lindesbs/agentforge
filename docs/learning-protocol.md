@@ -31,3 +31,13 @@ Ausschlaggebend ist die tatsächliche Übertragbarkeit einer Erkenntnis, nicht d
 Die lokale Erkenntnisbibliothek speichert bestätigte Einträge nach Kategorie und Programmiersprache (z. B. Go, PHP, TypeScript, Python, Rust oder Allgemein). Zu jedem Eintrag gehören Titel, Erkenntnis/Ursache, verbindliche Regel und Kontrolle. Das ist eine Vorlagenbibliothek: Speichern eines Eintrags dort verändert **keine** Projektdateien. Eine erzeugte Markdown-Vorlage kann anschließend in die zuständige der vier Dateien übernommen werden.
 
 Der Abschnitt `Standard-Stack für neue Projekte` aus einer AGENTS.md muss projektspezifisch ergänzt werden, solange keine konkreten Standard-Stack-Vorgaben vorliegen.
+
+## Vorhandene Projekt-Erkenntnisse importieren
+
+Nach Auswahl oder CLI-Start eines Projekts lässt sich in der Desktop-App unter „Entwicklungs-Erkenntnisse“ die Aktion **„Projektdokumente durchsuchen“** aufrufen. AgentForge liest ausschließlich die vorhandenen vier `docs/PROJEKT_*.md`- und `docs/ALLGEMEIN_*.md`-Dateien. Es folgen eine Vorschau und eine individuelle Übernahme je erkanntem Eintrag in die lokale Bibliothek. Die Projektdateien werden beim Import **nicht verändert**.
+
+Der Import unterstützt vorhandene Markdown-Abschnitte mit `##` oder `###` und den beschrifteten Feldern `**Erkenntnis:**` beziehungsweise `**Bestätigte Erkenntnis/Ursache:**`, `**Regel:**` beziehungsweise `**Verbindliche Regel:**` sowie `**Prüfung:**`. Die Sprache wird aus `**Sprache:**` gelesen oder kann vor der Übernahme ausgewählt werden (Standard: `Allgemein`).
+
+Unvollständige Abschnitte werden **nicht automatisch als bestätigte Erkenntnisse importiert**; die Oberfläche zeigt die Gründe an. Doppelte Kombinationen aus Kategorie, Sprache und Titel werden abgewiesen. Für jeden Import wird die Quelldatei erneut gelesen und mit dem Vorschau-Hash verglichen. Importierte Daten können vertrauliche Informationen enthalten – Inhalte vor einer späteren öffentlichen Veröffentlichung stets manuell prüfen.
+
+Derzeit gibt es keinen generischen Markdown-/AGENTS.md-Freitextimport, keine automatische KI-Extraktion und keinen automatischen Upload zur Exchange-Plattform.
