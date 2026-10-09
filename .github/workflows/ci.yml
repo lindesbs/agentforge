@@ -49,5 +49,13 @@ jobs:
       - name: Build frontend assets
         working-directory: frontend
         run: npm install --no-audit --no-fund && npm run build
+      - name: Resolve Go modules
+        run: go mod tidy
       - name: Compile desktop app
-        run: go build -tags webkit2_41 -o /tmp/agentforge .
+        run: go build -tags webkit2_41 -o dist/agentforge .
+      - name: Upload Linux executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: agentforge-linux-amd64
+          path: dist/agentforge
+          if-no-files-found: error
