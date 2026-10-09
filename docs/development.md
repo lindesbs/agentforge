@@ -1,5 +1,18 @@
 # Local development
 
+## Projekt direkt beim Start öffnen
+
+AgentForge akzeptiert beim Start ein optionales Projektverzeichnis als **erstes Positionsargument**:
+
+```sh
+./build/bin/agentforge ~/GolandProjects/mein-projekt
+./build/bin/agentforge .
+./build/bin/agentforge /absoluter/pfad
+./build/bin/agentforge --help
+```
+
+Ohne Argument öffnet AgentForge die normale Projektauswahl. Relative Pfade werden gegenüber dem aktuellen Arbeitsverzeichnis aufgelöst. Bei ungültigem Pfad, Datei statt Verzeichnis, symbolischem Link als Projektwurzel oder mehreren Positionsargumenten wird der Start mit einer Fehlermeldung abgebrochen. Das angegebene Projekt wird im UI automatisch eingelesen, ohne es zu verändern.
+
 ## Linux build with Make
 
 From the repository root:
