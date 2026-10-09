@@ -6,6 +6,7 @@ import (
 
  "github.com/lindesbs/agentforge/internal/inspector"
  "github.com/lindesbs/agentforge/internal/editor"
+ "github.com/lindesbs/agentforge/internal/templates"
  "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -49,4 +50,18 @@ func (a *App) PrepareAgentFields(root,path,hash,name,description string) (editor
 
 func (a *App) ValidateConfig(path, content string) []editor.Issue {
  return editor.Validate(path, content)
+}
+
+func (a *App) ListTemplates() ([]templates.Summary,error) {
+ library,err:=templates.New("");if err!=nil{return nil,err}
+ return library.List()
+}
+func (a *App) SaveProjectAsTemplate(root,path,name string) (templates.Summary,error) {
+ library,err:=templates.New("");if err!=nil{return templates.Summary{},err}
+ item,err:=library.CreateFromProject(root,path,name);if err!=nil{return templates.Summary{},err}
+ return templates.Summary{ID:item.ID,Name:item.Name,Provider:item.Provider,Kind:item.Kind,SourcePath:item.SourcePath,CreatedAt:item.CreatedAt},nil
+}
+func (a *App) PrepareTemplateApply(id,root,targetPath string) (editor.Document,error) {
+ library,err:=templates.New("");if err!=nil{return editor.Document{},err}
+ return library.PrepareApply(id,root,targetPath)
 }
